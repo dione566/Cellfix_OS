@@ -1841,7 +1841,7 @@ html, body { max-width: 100%; overflow-x: hidden; }
             document.getElementById('imageZoomModal').classList.add('hidden');
         }
 
-        function getWhatsAppHeader(os, includeOrder = true, companyName = 'GOMESCELL ASSISTÊNCIA TÉCNICA') {
+        function getWhatsAppHeader(os, includeOrder = true, companyName = ' ASSISTÊNCIA TÉCNICA') {
             const formattedValor = (os.valor === null || os.valor === undefined || os.valor === '') ? '' : formatMoney(os.valor);
             const dataFmt = formatDateBR(os.data);
             return `📱 *${companyName}*\n` +
@@ -1861,7 +1861,7 @@ html, body { max-width: 100%; overflow-x: hidden; }
             let msg = header;
 
             if (template === 'pendencia_gomescell') {
-                msg = getWhatsAppHeader(os, false, 'GOMESCELL ASSISTÊNCIA TÉCNICA');
+                msg = getWhatsAppHeader(os, false, ' ASSISTÊNCIA TÉCNICA');
                 msg += `⚠️ *Status:* LEMBRETE DE PENDÊNCIA FINANCEIRA\n\n`;
                 msg += `Prezado(a) ${os.cliente}, gostaríamos de lembrar gentilmente a quitação pendente referente ao serviço realizado em seu *${os.aparelho}*\n\n`;
                 msg += `Ficamos no aguardo da confirmação ou envio do comprovante para conclusão em nosso sistema. Qualquer dúvida estamos à total disposição!`;
