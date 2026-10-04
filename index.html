@@ -688,7 +688,7 @@ html, body { max-width: 100%; overflow-x: hidden; }
         }
 
         async function flushSyncQueue(showMessage = true) {
-            if (!isAuthenticated || subscriptionBlocked || !navigator.onLine || syncInProgress) return false;
+            if (!isAuthenticated || subscriptionBlocked || !navigator.onLine || syncInProgress || !currentUserId) return false;
 
             const initialQueue = readSyncQueue();
             if (!initialQueue.length) {
@@ -701,45 +701,67 @@ html, body { max-width: 100%; overflow-x: hidden; }
             updateSyncStatus();
 
             let queue = [...initialQueue];
+            let syncedCount = 0;
 
             try {
                 while (queue.length && navigator.onLine) {
                     const item = queue[0];
 
                     if (item.action === 'upsert') {
-                        const { error } = await supabaseClient
+                        const os = item.dados;
+                        if (!os?.id) throw new Error('OS pendente sem ID.');
+
+                        const payload = {
+                            id: String(item.id),
+                            user_id: currentUserId,
+                            dados: os
+                        };
+
+                        // Mesmo padrão usado no salvamento normal: UPDATE da própria OS;
+                        // se não existir, INSERT. Isso evita que o upsert por "id" acione
+                        // a política de UPDATE de outra conta.
+                        const { data: updatedRows, error: updateError } = await supabaseClient
                             .from('ordens_servico')
-                            .upsert(
-                                { id: String(item.id), user_id: currentUserId, dados: item.dados },
-                                { onConflict: 'id' }
-                            );
-                        if (error) throw error;
+                            .update({ dados: os })
+                            .eq('id', String(item.id))
+                            .eq('user_id', currentUserId)
+                            .select('id');
+
+                        if (updateError) throw updateError;
+
+                        if (!updatedRows || updatedRows.length === 0) {
+                            const { error: insertError } = await supabaseClient
+                                .from('ordens_servico')
+                                .insert(payload);
+                            if (insertError) throw insertError;
+                        }
                     } else if (item.action === 'delete') {
                         const { error } = await supabaseClient
                             .from('ordens_servico')
                             .delete()
-                            .eq('id', String(item.id));
+                            .eq('id', String(item.id))
+                            .eq('user_id', currentUserId);
                         if (error) throw error;
                     }
 
                     queue.shift();
+                    syncedCount++;
                     writeSyncQueue(queue);
                     updateSyncStatus();
                 }
 
                 if (showMessage && initialQueue.length > 0 && queue.length === 0) {
-                    showToast(`☁️ ${initialQueue.length} alteração(ões) sincronizada(s).`, 'success');
+                    showToast(`☁️ ${syncedCount} alteração(ões) sincronizada(s).`, 'success');
                 }
 
                 return queue.length === 0;
             } catch (error) {
                 console.error('Erro na sincronização:', error);
-
-                // A alteração continua na fila e será tentada novamente.
                 writeSyncQueue(queue);
 
                 if (!lastSyncErrorShown) {
-                    showToast('Não foi possível sincronizar agora. As alterações ficaram salvas neste dispositivo.', 'error');
+                    const msg = error?.message || error?.details || 'erro desconhecido';
+                    showToast(`⚠️ Sincronização pendente: ${msg}`, 'error');
                     lastSyncErrorShown = true;
                 }
                 return false;
@@ -773,6 +795,20 @@ html, body { max-width: 100%; overflow-x: hidden; }
             updateSyncStatus();
             if (isAuthenticated) {
                 showToast('🌐 Internet voltou. Sincronizando as OS...', 'info');
+                await syncNow();
+            }
+        });
+
+        // Tenta sincronizar periodicamente e também quando o usuário volta para a aba.
+        setInterval(async () => {
+            if (isAuthenticated && !subscriptionBlocked && navigator.onLine && !syncInProgress) {
+                const pending = readSyncQueue();
+                if (pending.length) await syncNow();
+            }
+        }, 30000);
+
+        document.addEventListener('visibilitychange', async () => {
+            if (!document.hidden && isAuthenticated && !subscriptionBlocked && navigator.onLine) {
                 await syncNow();
             }
         });
@@ -1034,14 +1070,17 @@ html, body { max-width: 100%; overflow-x: hidden; }
                 // Antes de buscar a nuvem, envia tudo que ficou pendente offline.
                 await flushSyncQueue(false);
 
+                // Busca somente as OS da conta atual. Não dependemos de created_at,
+                // pois a tabela pode não ter essa coluna.
                 const { data, error } = await supabaseClient
                     .from('ordens_servico')
-                    .select('id,dados')
-                    .order('created_at', { ascending: false });
+                    .select('id,user_id,dados')
+                    .eq('user_id', currentUserId);
 
                 if (error) throw error;
 
                 const cloudOrders = (data || [])
+                    .filter(row => String(row.user_id || '') === String(currentUserId))
                     .map(row => row.dados)
                     .filter(os => os && os.id);
 
@@ -1084,10 +1123,10 @@ html, body { max-width: 100%; overflow-x: hidden; }
             }
         }
 
-        async function saveOrderToSupabase(os) {
-            if (!isAuthenticated || subscriptionBlocked || !os?.id) return false;
+        async function saveOrderToSupabase(os, showError = true) {
+            if (!isAuthenticated || subscriptionBlocked || !os?.id || !currentUserId) return false;
 
-            // O dispositivo é sempre atualizado primeiro.
+            // Sempre salva primeiro no aparelho.
             saveOrdersLocally();
 
             if (!navigator.onLine) {
@@ -1096,26 +1135,53 @@ html, body { max-width: 100%; overflow-x: hidden; }
             }
 
             try {
-                const { error } = await supabaseClient
+                const payload = {
+                    id: String(os.id),
+                    user_id: currentUserId,
+                    dados: os
+                };
+
+                // Não usamos upsert por "id". Como "id" é a chave primária da tabela,
+                // primeiro tentamos atualizar somente a OS pertencente ao usuário.
+                // Se ela ainda não existir para este usuário, fazemos INSERT.
+                const { data: updatedRows, error: updateError } = await supabaseClient
                     .from('ordens_servico')
-                    .upsert({ id: String(os.id), user_id: currentUserId, dados: os }, { onConflict: 'id' });
+                    .update({ dados: os })
+                    .eq('id', String(os.id))
+                    .eq('user_id', currentUserId)
+                    .select('id');
 
-                if (error) throw error;
+                if (updateError) throw updateError;
 
-                updateSyncStatus();
+                if (!updatedRows || updatedRows.length === 0) {
+                    const { error: insertError } = await supabaseClient
+                        .from('ordens_servico')
+                        .insert(payload);
+
+                    if (insertError) throw insertError;
+                }
+
+                // Remove somente a pendência desta OS depois da confirmação do banco.
+                const queue = readSyncQueue().filter(item =>
+                    !(item.action === 'upsert' && String(item.id) === String(os.id))
+                );
+                writeSyncQueue(queue);
+                updateSyncStatus('Sincronizado');
                 return true;
             } catch (error) {
                 console.error('Erro ao salvar OS no Supabase:', error);
-
-                // Não perde a alteração: coloca na fila para tentar novamente.
                 queueSyncOperation('upsert', os.id, os);
-                showToast(`OS ${os.id} salva no aparelho. Será sincronizada quando a conexão voltar.`, 'info');
+
+                if (showError) {
+                    const msg = error?.message || error?.details || 'erro desconhecido';
+                    showToast(`OS ${os.id} ficou salva no aparelho. Sincronização pendente: ${msg}`, 'error');
+                }
                 return false;
             }
         }
 
         async function persistAllOrdersToSupabase(showMessage = true) {
-            if (!isAuthenticated || !ensureSubscriptionForAction()) return false;
+            if (!isAuthenticated || !ensureSubscriptionForAction() || !currentUserId) return false;
 
             saveOrdersLocally();
 
@@ -1125,30 +1191,28 @@ html, body { max-width: 100%; overflow-x: hidden; }
                 return false;
             }
 
-            try {
-                if (orders.length > 0) {
-                    const rows = orders.map(os => ({ id: String(os.id), user_id: currentUserId, dados: os }));
-                    const { error } = await supabaseClient
-                        .from('ordens_servico')
-                        .upsert(rows, { onConflict: 'id' });
-                    if (error) throw error;
-                }
+            let allOk = true;
+            let synced = 0;
 
-                if (showMessage) showToast('☁️ Dados salvos e sincronizados com o banco online.', 'success');
-                updateSyncStatus();
-                return true;
-            } catch (error) {
-                console.error('Erro ao salvar OS no Supabase:', error);
-
-                // Em caso de falha de rede, coloca as OS na fila.
-                orders.forEach(os => queueSyncOperation('upsert', os.id, os));
-                showToast('Os dados ficaram salvos neste dispositivo e serão sincronizados depois.', 'info');
-                return false;
+            // Mantemos o modelo do exemplo que funciona: uma OS por vez.
+            for (const os of orders) {
+                const ok = await saveOrderToSupabase(os, false);
+                if (ok) synced++;
+                else allOk = false;
             }
+
+            if (allOk) {
+                updateSyncStatus('Sincronizado');
+                if (showMessage) showToast(`☁️ ${synced} OS sincronizada(s) com o banco online.`, 'success');
+            } else if (showMessage) {
+                showToast(`⚠️ ${orders.length - synced} OS ficaram pendentes e serão sincronizadas automaticamente.`, 'info');
+            }
+
+            return allOk;
         }
 
         async function deleteOrderFromSupabase(osId) {
-            if (!isAuthenticated || subscriptionBlocked || !osId) return false;
+            if (!isAuthenticated || subscriptionBlocked || !osId || !currentUserId) return false;
 
             if (!navigator.onLine) {
                 queueSyncOperation('delete', osId);
@@ -1159,7 +1223,8 @@ html, body { max-width: 100%; overflow-x: hidden; }
                 const { error } = await supabaseClient
                     .from('ordens_servico')
                     .delete()
-                    .eq('id', String(osId));
+                    .eq('id', String(osId))
+                    .eq('user_id', currentUserId);
 
                 if (error) throw error;
 
@@ -1167,14 +1232,11 @@ html, body { max-width: 100%; overflow-x: hidden; }
                 return true;
             } catch (error) {
                 console.error('Erro ao excluir OS do Supabase:', error);
-
-                // A exclusão também fica pendente para não reaparecer na nuvem.
                 queueSyncOperation('delete', osId);
                 showToast(`OS ${osId} excluída deste aparelho. A exclusão será sincronizada depois.`, 'info');
                 return false;
             }
         }
-
 
         // Função que detecta OS vencidas e joga automaticamente na aba 'devedores'
         async function checkAndAutoUpdateOverdue() {
@@ -2082,39 +2144,132 @@ html, body { max-width: 100%; overflow-x: hidden; }
             const input = event?.target;
             const file = input?.files?.[0];
             if (!file) return;
-            if (!isAuthenticated) {
+
+            if (!isAuthenticated || !currentUserId) {
                 showToast('Acesso restrito. Faça login para importar as OS.', 'error');
-                input.value = '';
+                if (input) input.value = '';
+                document.getElementById('authModal')?.classList.remove('hidden');
                 return;
             }
+
             try {
-                const parsed = JSON.parse(await file.text());
-                const importedOrders = Array.isArray(parsed) ? parsed : parsed?.ordens;
-                if (!Array.isArray(importedOrders)) throw new Error('Formato de arquivo não reconhecido.');
+                const text = await file.text();
+                const parsed = JSON.parse(text);
+
+                // Aceita tanto um array puro quanto o formato de backup do CellFix.
+                const importedOrders = Array.isArray(parsed)
+                    ? parsed
+                    : parsed?.ordens;
+
+                if (!Array.isArray(importedOrders)) {
+                    throw new Error('Formato de arquivo não reconhecido.');
+                }
+
+                // Remove duplicidades e garante IDs em formato texto.
                 const seen = new Set();
                 const validOrders = importedOrders
-                    .filter(os => os && typeof os === 'object' && os.id)
-                    .map(os => ({...os, id: String(os.id)}))
-                    .filter(os => !seen.has(os.id) && seen.add(os.id));
-                if (validOrders.length === 0) throw new Error('O arquivo não contém OS válidas.');
-                const currentTotal = Array.isArray(orders) ? orders.length : 0;
-                const confirmar = confirm(`Foram encontradas ${validOrders.length} OS válidas.\n\nA importação substituirá as ${currentTotal} OS atuais por este arquivo.\n\nDeseja continuar?`);
-                if (!confirmar) { showToast('Importação cancelada.', 'info'); return; }
-                // Como a importação substitui o banco atual, removemos primeiro as OS antigas da nuvem.
-                const oldOrders = Array.isArray(orders) ? [...orders] : [];
+                    .filter(os => os && typeof os === 'object' && os.id !== undefined && os.id !== null && String(os.id).trim() !== '')
+                    .map(os => ({ ...os, id: String(os.id) }))
+                    .filter(os => {
+                        if (seen.has(os.id)) return false;
+                        seen.add(os.id);
+                        return true;
+                    });
+
+                if (validOrders.length === 0) {
+                    throw new Error('O arquivo não contém OS válidas.');
+                }
+
+                const currentOrders = Array.isArray(orders) ? [...orders] : [];
+                const importedIds = new Set(validOrders.map(os => String(os.id)));
+
+                const confirmar = confirm(
+                    `Foram encontradas ${validOrders.length} OS válidas.\n\n` +
+                    `A importação substituirá as ${currentOrders.length} OS atuais por este arquivo.\n\n` +
+                    `As OS que não estiverem no arquivo serão removidas do banco deste usuário.\n\n` +
+                    `Deseja continuar?`
+                );
+
+                if (!confirmar) {
+                    showToast('Importação cancelada.', 'info');
+                    return;
+                }
+
+                // 1) Atualiza imediatamente o armazenamento local.
+                // Assim o usuário não perde a importação mesmo se ficar sem internet.
                 orders = validOrders;
                 saveOrdersLocally();
                 renderOrders();
                 updateFinancialStats(false);
 
-                for (const oldOS of oldOrders) {
-                    if (oldOS?.id) await deleteOrderFromSupabase(oldOS.id);
+                // 2) Coloca TODAS as OS importadas na fila.
+                // Isso garante sincronização mesmo se a conexão cair durante a importação.
+                for (const os of validOrders) {
+                    queueSyncOperation('upsert', os.id, os);
                 }
-                await persistAllOrdersToSupabase(true);
-                showToast(`📥 ${orders.length} OS importadas com sucesso.`, 'success');
+
+                // 3) As OS antigas que não existem mais no arquivo também precisam
+                // ser removidas do Supabase. Se estiver offline, entram na fila.
+                for (const oldOS of currentOrders) {
+                    if (!oldOS?.id) continue;
+                    const oldId = String(oldOS.id);
+
+                    if (!importedIds.has(oldId)) {
+                        if (navigator.onLine) {
+                            await deleteOrderFromSupabase(oldId);
+                        } else {
+                            queueSyncOperation('delete', oldId, null);
+                        }
+                    }
+                }
+
+                // 4) Online: envia a fila imediatamente.
+                // Offline: a fila permanece salva e será enviada quando a internet voltar.
+                let synced = 0;
+                let pending = 0;
+
+                if (navigator.onLine) {
+                    await flushSyncQueue(false);
+                    const remaining = readSyncQueue();
+
+                    pending = remaining.filter(item =>
+                        validOrders.some(os => String(os.id) === String(item.id))
+                    ).length;
+
+                    synced = validOrders.length - pending;
+                } else {
+                    pending = validOrders.length;
+                }
+
+                updateSyncStatus(
+                    pending > 0
+                        ? `${pending} OS pendente(s)`
+                        : 'Importação sincronizada'
+                );
+
+                if (!navigator.onLine) {
+                    showToast(
+                        `📴 ${validOrders.length} OS importadas no aparelho. Serão enviadas ao Supabase quando a internet voltar.`,
+                        'info'
+                    );
+                } else if (pending === 0) {
+                    showToast(
+                        `☁️ ${validOrders.length} OS importadas e sincronizadas com o Supabase.`,
+                        'success'
+                    );
+                } else {
+                    showToast(
+                        `📥 ${validOrders.length} OS importadas. ${pending} ficaram pendentes e serão sincronizadas automaticamente.`,
+                        'info'
+                    );
+                }
+
             } catch (error) {
                 console.error('Erro ao importar OS:', error);
-                showToast(`Não foi possível importar: ${error.message || 'arquivo inválido'}`, 'error');
+                showToast(
+                    `Não foi possível importar: ${error?.message || 'arquivo inválido'}`,
+                    'error'
+                );
             } finally {
                 if (input) input.value = '';
             }
@@ -2196,11 +2351,13 @@ html, body { max-width: 100%; overflow-x: hidden; }
                 if (!accessOk) {
                     return;
                 }
+                // Carrega a conta correta e envia qualquer fila pendente imediatamente.
+                await loadOrdersFromSupabase(true);
+
 
                 cacheSubscriptionInfo();
                 updateMenuVisibility();
                 showToast('Acesso concedido com sucesso!', 'success');
-                await loadOrdersFromSupabase(true);
             } catch (error) {
                 console.error('Erro no login Supabase:', error);
                 showToast('E-mail ou senha incorretos.', 'error');
