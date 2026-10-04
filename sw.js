@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gerenciador-os-offline-v3';
+const CACHE_NAME = 'cellfix-os-offline-v4';
 const APP_SHELL = [
   './',
   'https://cdn.tailwindcss.com',
