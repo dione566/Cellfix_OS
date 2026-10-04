@@ -60,31 +60,61 @@
 <style id="responsive-mobile-desktop-fix">
 html, body { max-width: 100%; overflow-x: hidden; }
 
-/* Cabeçalho profissional */
-.pro-header { height: 72px; }
-.pro-header-brand { min-width: 0; }
-.pro-header-actions { display:flex; align-items:center; gap:7px; margin-left:auto; }
+/* Cabeçalho CellFix — visual premium e responsivo */
+.pro-header { min-height:76px; height:auto; padding-top:10px; padding-bottom:10px; }
+.pro-header-brand { min-width:0; flex:1 1 auto; }
+.pro-brand-copy { min-width:0; display:flex; flex-direction:column; justify-content:center; gap:5px; }
+.pro-header-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-left:18px; flex:0 0 auto; }
 .pro-header-action {
     width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center;
     border-radius:12px; border:1px solid rgba(148,163,184,.22);
-    background:rgba(255,255,255,.72); color:#475569; transition:.18s ease;
+    background:rgba(255,255,255,.78); color:#475569; transition:transform .18s ease, background .18s ease, box-shadow .18s ease;
+    flex:0 0 auto;
 }
-.pro-header-action:hover { transform:translateY(-1px); background:#fff; box-shadow:0 6px 18px rgba(15,23,42,.08); }
-.dark .pro-header-action { background:rgba(30,41,59,.72); border-color:rgba(71,85,105,.55); color:#cbd5e1; }
+.pro-header-action:hover { transform:translateY(-1px); background:#fff; box-shadow:0 7px 20px rgba(15,23,42,.09); }
+.dark .pro-header-action { background:rgba(30,41,59,.78); border-color:rgba(71,85,105,.55); color:#cbd5e1; }
 .dark .pro-header-action:hover { background:#1e293b; }
-.pro-header-divider { width:1px; height:28px; background:rgba(148,163,184,.25); margin:0 3px; }
+.pro-header-divider { width:1px; height:28px; background:rgba(148,163,184,.25); margin:0 1px; }
 .pro-logout {
-    height:40px; display:inline-flex; align-items:center; gap:8px; padding:0 13px;
+    height:40px; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:0 13px;
     border-radius:12px; border:1px solid rgba(14,165,233,.18);
-    background:rgba(14,165,233,.07); color:#0369a1; font-size:12px; font-weight:700; transition:.18s ease;
+    background:rgba(14,165,233,.07); color:#0369a1; font-size:12px; font-weight:700; transition:.18s ease; white-space:nowrap;
 }
 .pro-logout:hover { background:rgba(14,165,233,.13); transform:translateY(-1px); }
 .dark .pro-logout { color:#7dd3fc; border-color:rgba(56,189,248,.18); background:rgba(14,165,233,.10); }
-.pro-sync { position:relative; }
+.pro-sync { position:relative; color:#059669 !important; }
 .pro-sync-dot { position:absolute; right:5px; top:5px; width:6px; height:6px; border-radius:50%; background:#10b981; box-shadow:0 0 0 2px #fff; }
 .dark .pro-sync-dot { box-shadow:0 0 0 2px #0f172a; }
 .pro-menu-wrap { position:relative; }
-.pro-menu-button { width:42px; height:42px; border-radius:13px; }
+.pro-menu-button { width:40px; height:40px; border-radius:12px; }
+
+/* Identidade e validade da conta */
+.pro-brand-title-row { display:flex; align-items:center; gap:8px; min-width:0; }
+.pro-subscription-badge {
+    display:inline-flex; align-items:center; gap:6px; max-width:100%; width:max-content;
+    padding:3px 9px 3px 7px; border-radius:999px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-size:10px; line-height:1.2; font-weight:800; letter-spacing:.01em;
+    border:1px solid rgba(14,165,233,.18); background:rgba(14,165,233,.07); color:#0369a1;
+}
+.pro-subscription-badge::before { content:'\f017'; font-family:'Font Awesome 6 Free'; font-weight:900; font-size:9px; }
+.dark .pro-subscription-badge { border-color:rgba(56,189,248,.20); background:rgba(14,165,233,.10); color:#7dd3fc; }
+.pro-subscription-badge.is-warning { border-color:rgba(245,158,11,.25); background:rgba(245,158,11,.10); color:#b45309; }
+.dark .pro-subscription-badge.is-warning { color:#fbbf24; background:rgba(245,158,11,.10); }
+.pro-subscription-badge.is-danger { border-color:rgba(244,63,94,.25); background:rgba(244,63,94,.10); color:#be123c; }
+.dark .pro-subscription-badge.is-danger { color:#fb7185; background:rgba(244,63,94,.10); }
+
+@media (max-width: 640px) {
+    .pro-header { min-height:70px; padding-top:8px; padding-bottom:8px; }
+    .pro-header-actions { gap:5px; margin-left:8px; }
+    .pro-header-action, .pro-logout { width:36px; height:36px; border-radius:11px; padding:0; }
+    .pro-logout span { display:none; }
+    .pro-header-divider { display:none; }
+    .pro-brand-copy { gap:4px; }
+    .pro-brand-title-row { gap:6px; }
+    .pro-header-subtitle { font-size:9px !important; }
+    .pro-subscription-badge { font-size:9px; padding:3px 7px 3px 6px; max-width:145px; }
+    .pro-subscription-badge::before { font-size:8px; }
+}
 
 /* Abas profissionais */
 .pro-tabs-wrap {
@@ -140,9 +170,14 @@ html, body { max-width: 100%; overflow-x: hidden; }
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-sky-500/20 shrink-0">
                     <i class="fa-solid fa-mobile-screen-button text-lg"></i>
                 </div>
-                <div class="min-w-0">
-                    <h1 class="text-base sm:text-lg font-extrabold tracking-tight bg-gradient-to-r from-sky-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-400 bg-clip-text text-transparent truncate">CellFix OS</h1>
-                    <p class="pro-header-subtitle text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">Gerenciador de Assistência Técnica</p>
+                <div class="pro-brand-copy">
+                    <div class="pro-brand-title-row">
+                        <h1 class="text-base sm:text-lg font-extrabold tracking-tight bg-gradient-to-r from-sky-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-400 bg-clip-text text-transparent truncate">CellFix OS</h1>
+                    </div>
+                    <div class="flex items-center gap-2 min-w-0">
+                        <p class="pro-header-subtitle text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate">Gerenciador de Assistência Técnica</p>
+                        <span id="subscriptionBadge" class="pro-subscription-badge hidden" title="Validade da licença"></span>
+                    </div>
                 </div>
             </div>
 
@@ -1085,13 +1120,38 @@ html, body { max-width: 100%; overflow-x: hidden; }
                     .filter(os => os && os.id);
 
                 // Se a conta ainda não tiver dados na nuvem, envia o banco local.
+                // Nunca substitua o banco local por um retorno vazio/parcial da nuvem.
+                // Primeiro mesclamos por ID: a nuvem atualiza o que existe e o local
+                // preserva qualquer OS que ainda esteja pendente de envio.
                 if (cloudOrders.length === 0) {
                     if (orders.length > 0) {
                         await persistAllOrdersToSupabase(false);
                     }
                 } else {
-                    orders = cloudOrders;
+                    const localById = new Map(orders.map(os => [String(os.id), os]));
+                    const cloudById = new Map(cloudOrders.map(os => [String(os.id), os]));
+
+                    // Dados confirmados na nuvem têm prioridade.
+                    cloudById.forEach((os, id) => localById.set(id, os));
+
+                    // Pendências locais continuam protegidas até a fila ser esvaziada.
+                    const pending = readSyncQueue();
+                    for (const item of pending) {
+                        if (item.action === 'upsert' && item.dados?.id) {
+                            localById.set(String(item.dados.id), item.dados);
+                        }
+                    }
+
+                    orders = Array.from(localById.values());
                     saveOrdersLocally();
+
+                    // Se existirem OS locais que ainda não chegaram à nuvem, tenta enviá-las.
+                    const cloudIds = new Set(cloudOrders.map(os => String(os.id)));
+                    for (const os of orders) {
+                        if (!cloudIds.has(String(os.id))) {
+                            await saveOrderToSupabase(os, false);
+                        }
+                    }
                 }
 
                 await checkAndAutoUpdateOverdue();
@@ -2077,6 +2137,9 @@ html, body { max-width: 100%; overflow-x: hidden; }
                 document.getElementById('authModal').classList.remove('hidden');
                 return;
             }
+            // Envia primeiro o que ficou pendente e depois garante que todas as OS
+            // atualmente no aparelho estejam gravadas no Supabase.
+            await flushSyncQueue(false);
             await persistAllOrdersToSupabase(true);
         }
 
@@ -2144,132 +2207,39 @@ html, body { max-width: 100%; overflow-x: hidden; }
             const input = event?.target;
             const file = input?.files?.[0];
             if (!file) return;
-
-            if (!isAuthenticated || !currentUserId) {
+            if (!isAuthenticated) {
                 showToast('Acesso restrito. Faça login para importar as OS.', 'error');
-                if (input) input.value = '';
-                document.getElementById('authModal')?.classList.remove('hidden');
+                input.value = '';
                 return;
             }
-
             try {
-                const text = await file.text();
-                const parsed = JSON.parse(text);
-
-                // Aceita tanto um array puro quanto o formato de backup do CellFix.
-                const importedOrders = Array.isArray(parsed)
-                    ? parsed
-                    : parsed?.ordens;
-
-                if (!Array.isArray(importedOrders)) {
-                    throw new Error('Formato de arquivo não reconhecido.');
-                }
-
-                // Remove duplicidades e garante IDs em formato texto.
+                const parsed = JSON.parse(await file.text());
+                const importedOrders = Array.isArray(parsed) ? parsed : parsed?.ordens;
+                if (!Array.isArray(importedOrders)) throw new Error('Formato de arquivo não reconhecido.');
                 const seen = new Set();
                 const validOrders = importedOrders
-                    .filter(os => os && typeof os === 'object' && os.id !== undefined && os.id !== null && String(os.id).trim() !== '')
-                    .map(os => ({ ...os, id: String(os.id) }))
-                    .filter(os => {
-                        if (seen.has(os.id)) return false;
-                        seen.add(os.id);
-                        return true;
-                    });
-
-                if (validOrders.length === 0) {
-                    throw new Error('O arquivo não contém OS válidas.');
-                }
-
-                const currentOrders = Array.isArray(orders) ? [...orders] : [];
-                const importedIds = new Set(validOrders.map(os => String(os.id)));
-
-                const confirmar = confirm(
-                    `Foram encontradas ${validOrders.length} OS válidas.\n\n` +
-                    `A importação substituirá as ${currentOrders.length} OS atuais por este arquivo.\n\n` +
-                    `As OS que não estiverem no arquivo serão removidas do banco deste usuário.\n\n` +
-                    `Deseja continuar?`
-                );
-
-                if (!confirmar) {
-                    showToast('Importação cancelada.', 'info');
-                    return;
-                }
-
-                // 1) Atualiza imediatamente o armazenamento local.
-                // Assim o usuário não perde a importação mesmo se ficar sem internet.
+                    .filter(os => os && typeof os === 'object' && os.id)
+                    .map(os => ({...os, id: String(os.id)}))
+                    .filter(os => !seen.has(os.id) && seen.add(os.id));
+                if (validOrders.length === 0) throw new Error('O arquivo não contém OS válidas.');
+                const currentTotal = Array.isArray(orders) ? orders.length : 0;
+                const confirmar = confirm(`Foram encontradas ${validOrders.length} OS válidas.\n\nA importação substituirá as ${currentTotal} OS atuais por este arquivo.\n\nDeseja continuar?`);
+                if (!confirmar) { showToast('Importação cancelada.', 'info'); return; }
+                // Como a importação substitui o banco atual, removemos primeiro as OS antigas da nuvem.
+                const oldOrders = Array.isArray(orders) ? [...orders] : [];
                 orders = validOrders;
                 saveOrdersLocally();
                 renderOrders();
                 updateFinancialStats(false);
 
-                // 2) Coloca TODAS as OS importadas na fila.
-                // Isso garante sincronização mesmo se a conexão cair durante a importação.
-                for (const os of validOrders) {
-                    queueSyncOperation('upsert', os.id, os);
+                for (const oldOS of oldOrders) {
+                    if (oldOS?.id) await deleteOrderFromSupabase(oldOS.id);
                 }
-
-                // 3) As OS antigas que não existem mais no arquivo também precisam
-                // ser removidas do Supabase. Se estiver offline, entram na fila.
-                for (const oldOS of currentOrders) {
-                    if (!oldOS?.id) continue;
-                    const oldId = String(oldOS.id);
-
-                    if (!importedIds.has(oldId)) {
-                        if (navigator.onLine) {
-                            await deleteOrderFromSupabase(oldId);
-                        } else {
-                            queueSyncOperation('delete', oldId, null);
-                        }
-                    }
-                }
-
-                // 4) Online: envia a fila imediatamente.
-                // Offline: a fila permanece salva e será enviada quando a internet voltar.
-                let synced = 0;
-                let pending = 0;
-
-                if (navigator.onLine) {
-                    await flushSyncQueue(false);
-                    const remaining = readSyncQueue();
-
-                    pending = remaining.filter(item =>
-                        validOrders.some(os => String(os.id) === String(item.id))
-                    ).length;
-
-                    synced = validOrders.length - pending;
-                } else {
-                    pending = validOrders.length;
-                }
-
-                updateSyncStatus(
-                    pending > 0
-                        ? `${pending} OS pendente(s)`
-                        : 'Importação sincronizada'
-                );
-
-                if (!navigator.onLine) {
-                    showToast(
-                        `📴 ${validOrders.length} OS importadas no aparelho. Serão enviadas ao Supabase quando a internet voltar.`,
-                        'info'
-                    );
-                } else if (pending === 0) {
-                    showToast(
-                        `☁️ ${validOrders.length} OS importadas e sincronizadas com o Supabase.`,
-                        'success'
-                    );
-                } else {
-                    showToast(
-                        `📥 ${validOrders.length} OS importadas. ${pending} ficaram pendentes e serão sincronizadas automaticamente.`,
-                        'info'
-                    );
-                }
-
+                await persistAllOrdersToSupabase(true);
+                showToast(`📥 ${orders.length} OS importadas com sucesso.`, 'success');
             } catch (error) {
                 console.error('Erro ao importar OS:', error);
-                showToast(
-                    `Não foi possível importar: ${error?.message || 'arquivo inválido'}`,
-                    'error'
-                );
+                showToast(`Não foi possível importar: ${error.message || 'arquivo inválido'}`, 'error');
             } finally {
                 if (input) input.value = '';
             }
