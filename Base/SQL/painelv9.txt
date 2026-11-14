@@ -1,0 +1,17 @@
+insert into public.profiles (id, email, nome, role, active, plan_name, started_at, expires_at, is_trial)
+select 
+  id, 
+  email, 
+  'Administrador', 
+  'admin', 
+  true, 
+  'Administrador Vitalício', 
+  now(), 
+  '2099-12-31 23:59:59', 
+  false
+from auth.users
+where email = 'dione952@gmail.com'
+on conflict (id) do update set 
+  role = 'admin',
+  active = true,
+  expires_at = '2099-12-31 23:59:59';

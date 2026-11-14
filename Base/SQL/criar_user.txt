@@ -1,0 +1,15 @@
+insert into public.profiles (id, email, nome, role, active, plan_name, started_at, expires_at, is_trial)
+values (
+  'ec8c7430-cf06-459f-b604-3075787499fd',
+  'dione955@gmail.com',
+  'Novo Usuário',
+  'user',
+  true,
+  'Plano Mensal',
+  now(),
+  now() + interval '396 days',
+  false
+)
+on conflict (id) do update set
+  active = true,
+  expires_at = now() + interval '396 days';

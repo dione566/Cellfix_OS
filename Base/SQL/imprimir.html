@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impressão de OS Offline - Assistência Técnica</title>
+    <style>
+        :root {
+            --bg-body: #f1f5f9;
+            --bg-header: rgba(255, 255, 255, 0.9);
+            --bg-card: #ffffff;
+            --bg-input: #f8fafc;
+            --bg-preview: linear-gradient(135deg, #cbd5e1, #e2e8f0);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --input-border: #cbd5e1;
+            --accent: #0284c7;
+            --accent-hover: #0369a1;
+            --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        html.dark {
+            --bg-body: #020617;
+            --bg-header: rgba(15, 23, 42, 0.9);
+            --bg-card: #0f172a;
+            --bg-input: #1e293b;
+            --bg-preview: linear-gradient(135deg, #090d16, #1e293b);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border-color: #1e293b;
+            --input-border: #334155;
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --shadow: 0 14px 35px rgba(0, 0, 0, 0.45);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background: var(--bg-body);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.25s, color 0.25s;
+        }
+
+        /* Header */
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            background: var(--bg-header);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .brand-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #0ea5e9, #4f46e5);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 16px rgba(14, 165, 233, 0.25);
+            flex-shrink: 0;
+        }
+
+        .brand-title {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(90deg, #0284c7, #4f46e5);
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        html.dark .brand-title {
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .brand-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .offline-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(16, 185, 129, 0.14);
+            color: #10b981;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .offline-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            height: 38px;
+            padding: 0 14px;
+            border-radius: 10px;
+            border: 1px solid var(--input-border);
+            background: var(--bg-card);
+            color: var(--text-main);
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            transition: all 0.18s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            border-color: var(--accent);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0284c7, #4f46e5);
+            color: #fff;
+            border: none;
+            box-shadow: 0 6px 18px rgba(2, 132, 199, 0.25);
+        }
+
+        .btn-primary:hover {
+            filter: brightness(1.08);
+        }
+
+        .btn-danger {
+            color: #f43f5e;
+            border-color: rgba(244, 63, 94, 0.3);
+        }
+
+        .btn-danger:hover {
+            background: rgba(244, 63, 94, 0.1);
+            border-color: #f43f5e;
+        }
+
+        /* Workspace */
+        .workspace {
+            display: grid;
+            grid-template-columns: minmax(340px, 440px) minmax(0, 1fr);
+            flex: 1;
+            min-height: calc(100vh - 65px);
+        }
+
+        .editor-pane {
+            padding: 18px;
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+            max-height: calc(100vh - 65px);
+        }
+
+        .preview-pane {
+            padding: 28px 20px;
+            background: var(--bg-preview);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-height: calc(100vh - 65px);
+        }
+
+        .section-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 14px;
+            box-shadow: var(--shadow);
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .field-group {
+            margin-bottom: 10px;
+        }
+
+        .field-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .field-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .field-input, .field-select, .field-textarea {
+            width: 100%;
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            background: var(--bg-input);
+            color: var(--text-main);
+            padding: 9px 11px;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .field-input:focus, .field-select:focus, .field-textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
+        }
+
+        .field-textarea {
+            resize: vertical;
+            min-height: 74px;
+            line-height: 1.45;
+        }
+
+        .check-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-main);
+            cursor: pointer;
+            user-select: none;
+            margin-top: 6px;
+        }
+
+        .check-row input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #0284c7;
+            cursor: pointer;
+        }
+
+        /* Histórico Rápido */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            font-size: 12px;
+        }
+
+        .history-item-info {
+            min-width: 0;
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .history-item-info strong {
+            display: block;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-item-info span {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        /* ==================== PAPEL DE IMPRESSÃO ==================== */
+        .preview-hint {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .print-sheet-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .print-paper {
+            background: #ffffff;
+            color: #172033;
+            width: 420px;
+            min-height: 594px;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
+            border-radius: 4px;
+            overflow: hidden;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .print-paper.format-a5 { width: 420px; min-height: 594px; }
+        .print-paper.format-a4landscape { width: 594px; min-height: 420px; }
+        .print-paper.format-thermal80 { width: 302px; min-height: auto; }
+        .print-paper.format-thermal58 { width: 219px; min-height: auto; }
+
+        .print-paper-inner { padding: 24px; }
+        .print-paper.format-thermal80 .print-paper-inner { padding: 14px; }
+        .print-paper.format-thermal58 .print-paper-inner { padding: 9px; }
+
+        .via-tag {
+            text-align: right;
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .print-brand {
+            text-align: center;
+            border-bottom: 2px solid #172033;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+        }
+
+        .print-brand-name {
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .print-paper.format-thermal58 .print-brand-name { font-size: 16px; }
+
+        .print-brand-sub {
+            font-size: 11px;
+            color: #475569;
+            margin-top: 3px;
+        }
+
+        .print-os-top {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .print-os-number {
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+        .print-os-date {
+            font-size: 10px;
+            color: #475569;
+            margin-top: 2px;
+        }
+
+        .print-status {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 4px 8px;
+            border: 1.5px solid #172033;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+        .print-block {
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 11px;
+            margin-bottom: 10px;
+        }
+
+        .print-block-title {
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #334155;
+            margin-bottom: 7px;
+            border-bottom: 1px dashed #e2e8f0;
+            padding-bottom: 4px;
+        }
+
+        .print-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .print-paper.format-thermal58 .print-row,
+        .print-paper.format-thermal80 .print-row {
+            grid-template-columns: 1fr;
+        }
+
+        .print-kv {
+            font-size: 12px;
+            line-height: 1.45;
+            word-break: break-word;
+        }
+
+        .print-kv b {
+            display: block;
+            font-size: 9px;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 1px;
+        }
+
+        .print-service {
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .print-value-box {
+            margin-top: 8px;
+            padding-top: 7px;
+            border-top: 1px dashed #cbd5e1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .print-guarantee {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+        }
+
+        .print-terms-title {
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+            text-align: center;
+            margin: 12px 0 6px;
+        }
+
+        .print-terms {
+            font-size: 10px;
+            line-height: 1.55;
+            color: #334155;
+            white-space: pre-wrap;
+        }
+
+        .print-signatures {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 26px;
+        }
+
+        .print-paper.format-thermal58 .print-signatures,
+        .print-paper.format-thermal80 .print-signatures {
+            grid-template-columns: 1fr;
+            gap: 22px;
+        }
+
+        .print-sign {
+            border-top: 1px solid #172033;
+            padding-top: 5px;
+            text-align: center;
+            font-size: 10px;
+            color: #334155;
+        }
+
+        .print-footer {
+            text-align: center;
+            font-size: 9px;
+            color: #64748b;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 14px;
+            padding-top: 7px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #0f172a;
+            color: #fff;
+            border: 1px solid #334155;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            z-index: 99;
+            opacity: 0;
+            transform: translateY(10px);
+            pointer-events: none;
+            transition: all 0.2s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsivo */
+        @media (max-width: 920px) {
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+            .editor-pane, .preview-pane {
+                max-height: none;
+            }
+            .print-paper.format-a5,
+            .print-paper.format-a4landscape {
+                width: 100%;
+                min-height: auto;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Regras exclusivas de Impressão */
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .app-header, .editor-pane, .preview-hint, .toast {
+                display: none !important;
+            }
+            .workspace {
+                display: block !important;
+            }
+            .preview-pane {
+                padding: 0 !important;
+                background: #ffffff !important;
+                max-height: none !important;
+                overflow: visible !important;
+            }
+            .print-sheet-wrapper {
+                gap: 16px !important;
+            }
+            .print-paper {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                margin: 0 auto !important;
+                page-break-inside: avoid;
+            }
+            .print-paper + .print-paper {
+                border-top: 1px dashed #94a3b8;
+                padding-top: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="brand-wrap">
+            <div class="brand-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                    <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+            </div>
+            <div>
+                <div class="brand-title">Emissor de OS • Impressão Direta</div>
+                <div class="brand-sub">
+                    <span>Digitação Manual</span>
+                    <span class="offline-badge"><span class="offline-dot"></span>100% Offline</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <button type="button" class="btn btn-danger" onclick="limparCliente()" title="Limpar dados do cliente para nova OS">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+                Limpar Campos
+            </button>
+
+            <button type="button" class="btn" onclick="salvarNoHistorico()" title="Salvar esta OS no histórico local do navegador">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Salvar Cópia
+            </button>
+
+            <button type="button" class="btn" onclick="toggleTheme()" title="Alternar tema claro/escuro">
+                <svg id="themeSvg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            </button>
+
+            <button type="button" class="btn btn-primary" onclick="imprimirOS()">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                Imprimir OS
+            </button>
+        </div>
+    </header>
+
+    <div class="workspace">
+        <!-- Coluna Esquerda: Formulário Manual -->
+        <aside class="editor-pane">
+
+            <!-- 1. Dados do Cliente e Aparelho -->
+            <div class="section-card">
+                <div class="section-title">
+                    <span>1. Dados do Cliente & Aparelho</span>
+                    <button type="button" onclick="gerarProximoNumeroOS()" style="background:none;border:none;color:var(--accent);font-size:10px;font-weight:800;cursor:pointer;">+ Próxima OS</button>
+                </div>
+
+                <div class="grid-2 field-group">
+                    <div>
+                        <label class="field-label" for="osNumber">Número da OS</label>
+                        <input type="text" id="osNumber" class="field-input" placeholder="Ex: 001" oninput="atualizarPreview()">
+                    </div>
+                    <div>
+                        <label class="field-label" for="osStatus">Status do Serviço</label>
+                        <select id="osStatus" class="field-select" onchange="atualizarPreview()">
+                            <option value="EM ANDAMENTO">Em Andamento</option>
+                            <option value="ORÇAMENTO">Orçamento</option>
+                            <option value="PRONTO P/ RETIRADA">Pronto p/ Retirada</option>
+                            <option value="CONCLUÍDO / PAGO">Concluído / Pago</option>
+                            <option value="GARANTIA">Retorno / Garantia</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label" for="clientName">Nome do Cliente *</label>
+                    <input type="text" id="clientName" class="field-input" placeholder="Digite o nome completo do cliente" oninput="atualizarPreview()">
+                </div>
+
+                <div class="grid-2 field-group">
+                    <div>
+                        <label class="field-label" for="clientPhone">Telefone / WhatsApp</label>
+                        <input type="text" id="clientPhone" class="field-input" placeholder="(66) 99999-9999" oninput="atualizarPreview()">
+                    </div>
+                    <div>
+                        <label class="field-label" for="clientDoc">CPF / Observação (Opcional)</label>
+                        <input type="text" id="clientDoc" class="field-input" placeholder="CPF ou referência" oninput="atualizarPreview()">
+                    </div>
+                </div>
+
+                <div class="grid-2 field-group">
+                    <div>
+                        <label class="field-label" for="deviceModel">Marca / Modelo do Aparelho *</label>
+                        <input type="text" id="deviceModel" class="field-input" placeholder="Ex: Samsung A54 / iPhone 13" oninput="atualizarPreview()">
+                    </div>
+                    <div>
+                        <label class="field-label" for="devicePass">Senha / IMEI / Acessórios</label>
+                        <input type="text" id="devicePass" class="field-input" placeholder="Ex: Senha 1234 / Sem chip" oninput="atualizarPreview()">
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label" for="serviceDesc">Defeito Relatado / Serviço Executado *</label>
+                    <textarea id="serviceDesc" class="field-textarea" placeholder="Descreva o problema ou o serviço realizado (ex: Troca de frontal OLED + limpeza interna)..." oninput="atualizarPreview()"></textarea>
+                </div>
+
+                <div class="grid-2 field-group">
+                    <div>
+                        <label class="field-label" for="serviceValue">Valor Total (R$)</label>
+                        <input type="text" id="serviceValue" class="field-input" placeholder="Ex: 280,00" oninput="atualizarPreview()">
+                    </div>
+                    <div>
+                        <label class="field-label" for="paymentMethod">Forma de Pagamento</label>
+                        <select id="paymentMethod" class="field-select" onchange="atualizarPreview()">
+                            <option value="A combinar na retirada">A combinar na retirada</option>
+                            <option value="PIX">PIX</option>
+                            <option value="Dinheiro">Dinheiro</option>
+                            <option value="Cartão de Crédito">Cartão de Crédito</option>
+                            <option value="Cartão de Débito">Cartão de Débito</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Formato de Papel e Opções -->
+            <div class="section-card">
+                <div class="section-title"><span>2. Formato de Impressão</span></div>
+
+                <div class="grid-2 field-group">
+                    <div>
+                        <label class="field-label" for="paperFormat">Tamanho do Papel</label>
+                        <select id="paperFormat" class="field-select" onchange="atualizarPreview()">
+                            <option value="a5">A5 (Meia Folha A4)</option>
+                            <option value="a4landscape">A4 Paisagem</option>
+                            <option value="thermal80">Térmica 80mm (Bobina)</option>
+                            <option value="thermal58">Térmica 58mm (Mini)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label" for="warrantyDays">Garantia do Serviço</label>
+                        <select id="warrantyDays" class="field-select" onchange="salvarConfigLoja(); atualizarPreview()">
+                            <option value="90 dias">90 dias (Padrão Legal)</option>
+                            <option value="30 dias">30 dias</option>
+                            <option value="60 dias">60 dias</option>
+                            <option value="180 dias">180 dias</option>
+                            <option value="Sem garantia (Orçamento/Limpeza)">Sem garantia</option>
+                        </select>
+                    </div>
+                </div>
+
+                <label class="check-row">
+                    <input type="checkbox" id="twoCopies" onchange="atualizarPreview()">
+                    <span>Imprimir 2 vias (1ª Via Loja + 2ª Via Cliente)</span>
+                </label>
+
+                <label class="check-row">
+                    <input type="checkbox" id="showSignatures" checked onchange="salvarConfigLoja(); atualizarPreview()">
+                    <span>Exibir campos de assinatura no rodapé</span>
+                </label>
+            </div>
+
+            <!-- 3. Dados da Assistência (Salvos Automaticamente Offline) -->
+            <div class="section-card">
+                <div class="section-title">
+                    <span>3. Dados da Sua Loja (Salvo Localmente)</span>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label" for="storeName">Nome da Assistência Técnica</label>
+                    <input type="text" id="storeName" class="field-input" value="GOMESCELL ASSISTÊNCIA TÉCNICA" oninput="salvarConfigLoja(); atualizarPreview()">
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label" for="storeInfo">Telefone, Endereço ou Instagram</label>
+                    <input type="text" id="storeInfo" class="field-input" value="Sinop - MT • Manutenção Especializada em Smartphones" oninput="salvarConfigLoja(); atualizarPreview()">
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label" for="warrantyTerms">Termos e Condições de Garantia</label>
+                    <textarea id="warrantyTerms" class="field-textarea" style="min-height: 82px; font-size: 11px;" oninput="salvarConfigLoja(); atualizarPreview()">1. A garantia cobre exclusivamente a peça substituída e o serviço descrito nesta OS.
+2. Perde-se a garantia em caso de mau uso, queda, tela trincada, contato com líquidos, umidade ou violação do selo de garantia.
+3. Aparelhos não retirados em até 90 dias após conclusão estarão sujeitos à cobrança de taxa de guarda ou descarte legal.</textarea>
+                </div>
+            </div>
+
+            <!-- 4. Histórico Salvo Offline -->
+            <div class="section-card">
+                <div class="section-title">
+                    <span>4. Histórico Recente (Offline)</span>
+                    <span id="historyCount" style="font-size:10px;color:var(--text-muted);">0 salvas</span>
+                </div>
+                <div id="historyList" class="history-list">
+                    <div style="font-size:11px;color:var(--text-muted);text-align:center;padding:10px;">Nenhuma OS salva no histórico ainda.</div>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- Coluna Direita: Pré-visualização Real -->
+        <main class="preview-pane">
+            <div class="preview-hint">Pré-visualização do Comprovante de Impressão</div>
+            <div id="printSheetWrapper" class="print-sheet-wrapper"></div>
+        </main>
+    </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        const STORAGE_CONFIG_KEY = 'cellfix_offline_print_config_v1';
+        const STORAGE_COUNTER_KEY = 'cellfix_offline_print_counter_v1';
+        const STORAGE_HISTORY_KEY = 'cellfix_offline_print_history_v1';
+
+        function showToast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(el._timer);
+            el._timer = setTimeout(() => el.classList.remove('show'), 2600);
+        }
+
+        function escapeHTML(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            html.classList.toggle('dark');
+            localStorage.setItem('cellfix_offline_theme', html.classList.contains('dark') ? 'dark' : 'light');
+        }
+
+        function carregarTema() {
+            const saved = localStorage.getItem('cellfix_offline_theme');
+            if (saved === 'light') {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+
+        function salvarConfigLoja() {
+            const cfg = {
+                storeName: document.getElementById('storeName').value,
+                storeInfo: document.getElementById('storeInfo').value,
+                warrantyDays: document.getElementById('warrantyDays').value,
+                warrantyTerms: document.getElementById('warrantyTerms').value,
+                paperFormat: document.getElementById('paperFormat').value,
+                showSignatures: document.getElementById('showSignatures').checked,
+                twoCopies: document.getElementById('twoCopies').checked
+            };
+            localStorage.setItem(STORAGE_CONFIG_KEY, JSON.stringify(cfg));
+        }
+
+        function carregarConfigLoja() {
+            try {
+                const raw = localStorage.getItem(STORAGE_CONFIG_KEY);
+                if (!raw) return;
+                const cfg = JSON.parse(raw);
+                if (cfg.storeName !== undefined) document.getElementById('storeName').value = cfg.storeName;
+                if (cfg.storeInfo !== undefined) document.getElementById('storeInfo').value = cfg.storeInfo;
+                if (cfg.warrantyDays !== undefined) document.getElementById('warrantyDays').value = cfg.warrantyDays;
+                if (cfg.warrantyTerms !== undefined) document.getElementById('warrantyTerms').value = cfg.warrantyTerms;
+                if (cfg.paperFormat !== undefined) document.getElementById('paperFormat').value = cfg.paperFormat;
+                if (cfg.showSignatures !== undefined) document.getElementById('showSignatures').checked = cfg.showSignatures;
+                if (cfg.twoCopies !== undefined) document.getElementById('twoCopies').checked = cfg.twoCopies;
+            } catch (e) {}
+        }
+
+        function inicializarNumeroOS() {
+            const current = parseInt(localStorage.getItem(STORAGE_COUNTER_KEY) || '1', 10);
+            document.getElementById('osNumber').value = String(current).padStart(3, '0');
+        }
+
+        function gerarProximoNumeroOS() {
+            const current = parseInt(localStorage.getItem(STORAGE_COUNTER_KEY) || '1', 10) + 1;
+            localStorage.setItem(STORAGE_COUNTER_KEY, String(current));
+            document.getElementById('osNumber').value = String(current).padStart(3, '0');
+            atualizarPreview();
+            showToast('Número da OS avançado para #' + String(current).padStart(3, '0'));
+        }
+
+        function formatarDataHoraAtual() {
+            const now = new Date();
+            const data = now.toLocaleDateString('pt-BR');
+            const hora = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            return `${data} às ${hora}`;
+        }
+
+        function gerarHTMLComprovante(viaLabel) {
+            const storeName = document.getElementById('storeName').value.trim() || 'ASSISTÊNCIA TÉCNICA';
+            const storeInfo = document.getElementById('storeInfo').value.trim();
+            const osNumber = document.getElementById('osNumber').value.trim() || '001';
+            const osStatus = document.getElementById('osStatus').value;
+            const clientName = document.getElementById('clientName').value.trim() || 'Não informado';
+            const clientPhone = document.getElementById('clientPhone').value.trim() || '-';
+            const clientDoc = document.getElementById('clientDoc').value.trim();
+            const deviceModel = document.getElementById('deviceModel').value.trim() || 'Não informado';
+            const devicePass = document.getElementById('devicePass').value.trim() || '-';
+            const serviceDesc = document.getElementById('serviceDesc').value.trim() || 'Nenhum serviço detalhado.';
+            const serviceValue = document.getElementById('serviceValue').value.trim();
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const warrantyDays = document.getElementById('warrantyDays').value;
+            const warrantyTerms = document.getElementById('warrantyTerms').value.trim();
+            const showSignatures = document.getElementById('showSignatures').checked;
+            const paperFormat = document.getElementById('paperFormat').value;
+
+            const valorFormatado = serviceValue
+                ? (serviceValue.startsWith('R$') ? serviceValue : `R$ ${serviceValue}`)
+                : 'A orçar / A combinar';
+
+            return `
+                <div class="print-paper format-${escapeHTML(paperFormat)}">
+                    <div class="print-paper-inner">
+                        ${viaLabel ? `<div class="via-tag">${escapeHTML(viaLabel)}</div>` : ''}
+
+                        <div class="print-brand">
+                            <div class="print-brand-name">${escapeHTML(storeName)}</div>
+                            ${storeInfo ? `<div class="print-brand-sub">${escapeHTML(storeInfo)}</div>` : ''}
+                        </div>
+
+                        <div class="print-os-top">
+                            <div>
+                                <div class="print-os-number">OS #${escapeHTML(osNumber)}</div>
+                                <div class="print-os-date">Emissão: ${formatarDataHoraAtual()}</div>
+                            </div>
+                            <div class="print-status">${escapeHTML(osStatus)}</div>
+                        </div>
+
+                        <div class="print-block">
+                            <div class="print-block-title">Dados do Cliente</div>
+                            <div class="print-row">
+                                <div class="print-kv"><b>Cliente</b>${escapeHTML(clientName)}</div>
+                                <div class="print-kv"><b>Telefone / WhatsApp</b>${escapeHTML(clientPhone)}</div>
+                            </div>
+                            ${clientDoc ? `<div class="print-kv" style="margin-top:6px;"><b>CPF / Referência</b>${escapeHTML(clientDoc)}</div>` : ''}
+                        </div>
+
+                        <div class="print-block">
+                            <div class="print-block-title">Equipamento</div>
+                            <div class="print-row">
+                                <div class="print-kv"><b>Aparelho / Modelo</b>${escapeHTML(deviceModel)}</div>
+                                <div class="print-kv"><b>Senha / IMEI / Obs.</b>${escapeHTML(devicePass)}</div>
+                            </div>
+                        </div>
+
+                        <div class="print-block">
+                            <div class="print-block-title">Descrição do Serviço / Defeito</div>
+                            <div class="print-service">${escapeHTML(serviceDesc)}</div>
+                            <div class="print-value-box">
+                                <span>VALOR TOTAL:</span>
+                                <span>${escapeHTML(valorFormatado)}</span>
+                            </div>
+                            <div class="print-kv" style="margin-top:4px;font-size:10px;color:#475569;">
+                                Forma de Pagamento: <strong>${escapeHTML(paymentMethod)}</strong>
+                            </div>
+                        </div>
+
+                        <div class="print-block print-guarantee">
+                            <div class="print-kv"><b>Garantia do Serviço</b>${escapeHTML(warrantyDays)}</div>
+                        </div>
+
+                        ${warrantyTerms ? `
+                            <div class="print-terms-title">Termos de Garantia</div>
+                            <div class="print-terms">${escapeHTML(warrantyTerms)}</div>
+                        ` : ''}
+
+                        ${showSignatures ? `
+                            <div class="print-signatures">
+                                <div class="print-sign">Assinatura do Técnico / Loja</div>
+                                <div class="print-sign">Assinatura do Cliente (${escapeHTML(clientName)})</div>
+                            </div>
+                        ` : ''}
+
+                        <div class="print-footer">
+                            Comprovante emitido offline • ${escapeHTML(storeName)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function atualizarPreview() {
+            const wrapper = document.getElementById('printSheetWrapper');
+            const twoCopies = document.getElementById('twoCopies').checked;
+            salvarConfigLoja();
+
+            if (twoCopies) {
+                wrapper.innerHTML = gerarHTMLComprovante('1ª VIA — ASSISTÊNCIA TÉCNICA') + gerarHTMLComprovante('2ª VIA — CLIENTE');
+            } else {
+                wrapper.innerHTML = gerarHTMLComprovante('');
+            }
+        }
+
+        function limparCliente() {
+            document.getElementById('clientName').value = '';
+            document.getElementById('clientPhone').value = '';
+            document.getElementById('clientDoc').value = '';
+            document.getElementById('deviceModel').value = '';
+            document.getElementById('devicePass').value = '';
+            document.getElementById('serviceDesc').value = '';
+            document.getElementById('serviceValue').value = '';
+            document.getElementById('osStatus').value = 'EM ANDAMENTO';
+            document.getElementById('paymentMethod').value = 'A combinar na retirada';
+            atualizarPreview();
+            document.getElementById('clientName').focus();
+            showToast('Campos do cliente limpos!');
+        }
+
+        function salvarNoHistorico() {
+            const clientName = document.getElementById('clientName').value.trim();
+            const deviceModel = document.getElementById('deviceModel').value.trim();
+            if (!clientName && !deviceModel) {
+                showToast('Preencha ao menos o nome do cliente ou aparelho.');
+                return;
+            }
+
+            const item = {
+                id: Date.now(),
+                date: formatarDataHoraAtual(),
+                osNumber: document.getElementById('osNumber').value.trim() || '001',
+                osStatus: document.getElementById('osStatus').value,
+                clientName,
+                clientPhone: document.getElementById('clientPhone').value.trim(),
+                clientDoc: document.getElementById('clientDoc').value.trim(),
+                deviceModel,
+                devicePass: document.getElementById('devicePass').value.trim(),
+                serviceDesc: document.getElementById('serviceDesc').value.trim(),
+                serviceValue: document.getElementById('serviceValue').value.trim(),
+                paymentMethod: document.getElementById('paymentMethod').value
+            };
+
+            const list = JSON.parse(localStorage.getItem(STORAGE_HISTORY_KEY) || '[]');
+            list.unshift(item);
+            if (list.length > 30) list.pop();
+            localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(list));
+
+            renderizarHistorico();
+            showToast('OS #' + item.osNumber + ' salva no histórico offline!');
+        }
+
+        function carregarDoHistorico(id) {
+            const list = JSON.parse(localStorage.getItem(STORAGE_HISTORY_KEY) || '[]');
+            const item = list.find(x => x.id === id);
+            if (!item) return;
+
+            document.getElementById('osNumber').value = item.osNumber || '';
+            document.getElementById('osStatus').value = item.osStatus || 'EM ANDAMENTO';
+            document.getElementById('clientName').value = item.clientName || '';
+            document.getElementById('clientPhone').value = item.clientPhone || '';
+            document.getElementById('clientDoc').value = item.clientDoc || '';
+            document.getElementById('deviceModel').value = item.deviceModel || '';
+            document.getElementById('devicePass').value = item.devicePass || '';
+            document.getElementById('serviceDesc').value = item.serviceDesc || '';
+            document.getElementById('serviceValue').value = item.serviceValue || '';
+            document.getElementById('paymentMethod').value = item.paymentMethod || 'A combinar na retirada';
+
+            atualizarPreview();
+            showToast('OS #' + item.osNumber + ' carregada!');
+        }
+
+        function removerDoHistorico(id) {
+            let list = JSON.parse(localStorage.getItem(STORAGE_HISTORY_KEY) || '[]');
+            list = list.filter(x => x.id !== id);
+            localStorage.setItem(STORAGE_HISTORY_KEY, JSON.stringify(list));
+            renderizarHistorico();
+        }
+
+        function renderizarHistorico() {
+            const container = document.getElementById('historyList');
+            const countEl = document.getElementById('historyCount');
+            const list = JSON.parse(localStorage.getItem(STORAGE_HISTORY_KEY) || '[]');
+            countEl.textContent = `${list.length} salva(s)`;
+
+            if (!list.length) {
+                container.innerHTML = '<div style="font-size:11px;color:var(--text-muted);text-align:center;padding:10px;">Nenhuma OS salva no histórico ainda.</div>';
+                return;
+            }
+
+            container.innerHTML = list.map(item => `
+                <div class="history-item">
+                    <div class="history-item-info" onclick="carregarDoHistorico(${item.id})" title="Clique para carregar esta OS">
+                        <strong>#${escapeHTML(item.osNumber)} • ${escapeHTML(item.clientName || 'Sem nome')}</strong>
+                        <span>${escapeHTML(item.deviceModel || 'Aparelho')} • ${escapeHTML(item.date)}</span>
+                    </div>
+                    <button type="button" onclick="removerDoHistorico(${item.id})" title="Excluir do histórico" style="background:none;border:none;color:#f43f5e;cursor:pointer;padding:4px;">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function imprimirOS() {
+            salvarNoHistorico();
+            window.print();
+            // Incrementa automaticamente o contador para a próxima OS
+            const num = parseInt(document.getElementById('osNumber').value, 10);
+            if (!isNaN(num)) {
+                localStorage.setItem(STORAGE_COUNTER_KEY, String(num + 1));
+            }
+        }
+
+        // Inicialização
+        carregarTema();
+        carregarConfigLoja();
+        inicializarNumeroOS();
+        renderizarHistorico();
+        atualizarPreview();
+    </script>
+</body>
+</html>
